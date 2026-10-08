@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Recepção Pronto-Socorro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-md bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 p-8">
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-full mb-3 text-3xl">
+                🏥
+            </div>
+            <h1 class="text-2xl font-bold tracking-tight text-white">Recepção Pronto-Socorro</h1>
+            <p class="text-sm text-slate-400 mt-1">Acesso administrativo restrito</p>
+        </div>
+
+        {% if erro %}
+        <div class="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-sm text-center">
+            {{ erro }}
+        </div>
+        {% endif %}
+
+        <form method="POST" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="block text-sm font-medium text-slate-300 mb-1">Usuário</label>
+                <input type="text" name="username" required autofocus
+                    class="w-full px-4 py-2.5 bg-slate-900 border border-slate-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-slate-500"
+                    placeholder="Digite seu usuário">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-slate-300 mb-1">Senha</label>
+                <input type="password" name="password" required
+                    class="w-full px-4 py-2.5 bg-slate-900 border border-slate-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:outline-none placeholder-slate-500"
+                    placeholder="••••••••">
+            </div>
+
+            <button type="submit"
+                class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg shadow-lg hover:shadow-blue-500/25 transition-all duration-200 mt-2">
+                Entrar no Sistema
+            </button>
+        </form>
+
+        <div class="mt-6 text-center text-xs text-slate-500">
+            Sistema Distribuído de Triagem e Fila • Web II
+        </div>
+    </div>
+</body>
+</html>

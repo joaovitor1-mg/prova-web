@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel da Recepção - Pronto-Socorro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+    <!-- Header -->
+    <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <span class="text-2xl">🏥</span>
+                <div>
+                    <h1 class="text-lg font-bold text-white leading-tight">Recepção • Fila de Pronto-Socorro</h1>
+                    <span class="text-xs text-blue-400 font-medium">Notebook 1 — Controle Administrativo</span>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <a href="/painel/" target="_blank" class="text-xs text-slate-400 hover:text-white underline">
+                    Abrir Painel TV ↗
+                </a>
+                <span class="text-xs bg-slate-800 text-slate-300 px-3 py-1.5 rounded-full border border-slate-700">
+                    Operador: <strong class="text-blue-400">{{ request.user.username }}</strong>
+                </span>
+                <a href="/logout/" class="text-xs bg-red-600/20 text-red-400 hover:bg-red-600/30 px-3 py-1.5 rounded-md border border-red-500/30">
+                    Sair
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Top Grid: Cadastro e Configurações de Chamada -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <!-- Card 1: Novo Paciente -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl lg:col-span-1">
+                <h2 class="text-base font-bold text-white mb-4 flex items-center gap-2">
+                    <span>➕</span> Novo Paciente na Fila
+                </h2>
+                <form id="form-cadastro" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Nome do Paciente</label>
+                        <input type="text" id="cad-nome" required
+                            placeholder="Ex: Carlos Eduardo Silva"
+                            class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Prioridade</label>
+                        <select id="cad-prioridade" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <option value="normal">Normal (Ordem de chegada)</option>
+                            <option value="preferencial">Preferencial (Idoso / Gestante / Urgência)</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg text-sm shadow-md transition">
+                        Inserir na Fila
+                    </button>
+                </form>
+            </div>
+
+            <!-- Card 2: Chamar Próximo (Configurações da Chamada) -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl lg:col-span-2">
+                <h2 class="text-base font-bold text-white mb-4 flex items-center gap-2">
+                    <span>📢</span> Chamar Próximo da Fila
+                </h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Sala / Consultório</label>
+                        <input type="text" id="cfg-sala" value="Consultório 01"
+                            class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white text-sm focus:ring-2 focus:ring-green-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Médico(a) Responsável</label>
+                        <input type="text" id="cfg-medico" value="Dr. Roberto Neves"
+                            class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white text-sm focus:ring-2 focus:ring-green-500 focus:outline-none">
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button onclick="chamarProximo()" class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-sm shadow-lg hover:shadow-emerald-500/25 transition flex items-center justify-center gap-2">
+                        <span>🔔</span> Chamar Próximo Paciente
+                    </button>
+                    <button onclick="carregarFilas()" class="px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm transition">
+                        🔄 Atualizar
+                    </button>
+                </div>
+                <p class="text-xs text-slate-500 mt-3">
+                    * O sistema chama automaticamente os prioritários primeiro, seguidos pela ordem cronológica de chegada.
+                </p>
+            </div>
+        </div>
+
+        <!-- Seções de Tabelas -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Fila de Espera -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-base font-bold text-white flex items-center gap-2">
+                        <span>⏳</span> Aguardando Atendimento
+                        <span id="badge-total-aguardando" class="text-xs bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full font-mono">0</span>
+                    </h3>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-300">
+                        <thead class="text-xs uppercase bg-slate-950 text-slate-400 border-b border-slate-800">
+                            <tr>
+                                <th class="py-3 px-3">#</th>
+                                <th class="py-3 px-3">Nome</th>
+                                <th class="py-3 px-3">Prioridade</th>
+                                <th class="py-3 px-3 text-right">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabela-aguardando" class="divide-y divide-slate-800">
+                            <tr><td colspan="4" class="text-center py-6 text-slate-500">Nenhum paciente aguardando</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Pacientes Chamados / Em Atendimento -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-base font-bold text-white flex items-center gap-2">
+                        <span>🩺</span> Chamados Recentemente
+                        <span id="badge-total-chamados" class="text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-mono">0</span>
+                    </h3>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-300">
+                        <thead class="text-xs uppercase bg-slate-950 text-slate-400 border-b border-slate-800">
+                            <tr>
+                                <th class="py-3 px-3">Paciente</th>
+                                <th class="py-3 px-3">Sala / Médico</th>
+                                <th class="py-3 px-3 text-right">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabela-chamados" class="divide-y divide-slate-800">
+                            <tr><td colspan="3" class="text-center py-6 text-slate-500">Nenhuma chamada ativa</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal para Chamar Paciente Específico -->
+    <div id="modal-chamar" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 shadow-2xl">
+            <h3 class="text-lg font-bold text-white mb-2">Chamar Paciente</h3>
+            <p id="modal-paciente-nome" class="text-sm text-blue-400 mb-4 font-semibold"></p>
+            <input type="hidden" id="modal-paciente-id">
+            
+            <div class="space-y-4 mb-6">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Sala / Consultório</label>
+                    <input type="text" id="modal-sala" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Médico(a)</label>
+                    <input type="text" id="modal-medico" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white text-sm">
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3">
+                <button onclick="fecharModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm">Cancelar</button>
+                <button onclick="confirmarChamada()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg text-sm">Chamar Agora</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script de Integração com API -->
+    <script>
+        function getCsrfToken() {
+            const cookieValue = document.cookie
+                .split('; ')
+                .find(row => row.startsWith('csrftoken='))
+                ?.split('=')[1];
+            return cookieValue || '';
+        }
+
+        async function carregarFilas() {
+            try {
+                // Carregar aguardando
+                const resAguardando = await fetch('/api/fila/?status=aguardando');
+                if (resAguardando.ok) {
+                    const dados = await resAguardando.json();
+                    renderTabelaAguardando(dados);
+                }
+
+                // Carregar chamados
+                const resChamados = await fetch('/api/fila/?status=chamado');
+                if (resChamados.ok) {
+                    const dados = await resChamados.json();
+                    renderTabelaChamados(dados);
+                }
+            } catch (err) {
+                console.error("Erro ao carregar dados:", err);
+            }
+        }
+
+        function renderTabelaAguardando(pacientes) {
+            const tbody = document.getElementById('tabela-aguardando');
+            document.getElementById('badge-total-aguardando').innerText = pacientes.length;
+
+            if (pacientes.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center py-6 text-slate-500">Nenhum paciente aguardando</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = pacientes.map((p, index) => `
+                <tr class="hover:bg-slate-800/50">
+                    <td class="py-3 px-3 font-mono text-slate-500 text-xs">${index + 1}º</td>
+                    <td class="py-3 px-3 font-medium text-white">${p.nome}</td>
+                    <td class="py-3 px-3">
+                        <span class="text-xs px-2 py-0.5 rounded-full font-medium ${p.prioridade === 'preferencial' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-slate-800 text-slate-400'}">
+                            ${p.prioridade_display}
+                        </span>
+                    </td>
+                    <td class="py-3 px-3 text-right space-x-1">
+                        <button onclick="abrirModalChamar(${p.id}, '${p.nome.replace(/'/g, "\\'")}')" class="px-2.5 py-1 bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 rounded text-xs border border-emerald-500/30">
+                            Chamar
+                        </button>
+                        <button onclick="removerPaciente(${p.id})" class="px-2.5 py-1 bg-red-600/20 text-red-400 hover:bg-red-600/30 rounded text-xs border border-red-500/30" title="Desistência/Remover">
+                            Remover
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderTabelaChamados(pacientes) {
+            const tbody = document.getElementById('tabela-chamados');
+            document.getElementById('badge-total-chamados').innerText = pacientes.length;
+
+            if (pacientes.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="text-center py-6 text-slate-500">Nenhuma chamada ativa</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = pacientes.map(p => `
+                <tr class="hover:bg-slate-800/50">
+                    <td class="py-3 px-3">
+                        <div class="font-medium text-white">${p.nome}</div>
+                        <div class="text-xs text-slate-400">${p.prioridade_display}</div>
+                    </td>
+                    <td class="py-3 px-3 text-xs">
+                        <div class="text-emerald-400 font-semibold">${p.sala || '-'}</div>
+                        <div class="text-slate-400">${p.medico || '-'}</div>
+                    </td>
+                    <td class="py-3 px-3 text-right space-x-1">
+                        <button onclick="abrirModalChamar(${p.id}, '${p.nome.replace(/'/g, "\\'")}')" class="px-2.5 py-1 bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 rounded text-xs border border-blue-500/30" title="Chamar novamente com aviso sonoro">
+                            Re-chamar
+                        </button>
+                        <button onclick="finalizarAtendimento(${p.id})" class="px-2.5 py-1 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded text-xs">
+                            Concluir
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Cadastro de paciente
+        document.getElementById('form-cadastro').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const nome = document.getElementById('cad-nome').value.trim();
+            const prioridade = document.getElementById('cad-prioridade').value;
+
+            if (!nome) return;
+
+            const res = await fetch('/api/fila/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify({ nome, prioridade })
+            });
+
+            if (res.ok) {
+                document.getElementById('cad-nome').value = '';
+                carregarFilas();
+            } else {
+                alert('Erro ao cadastrar paciente.');
+            }
+        });
+
+        // Chamar próximo paciente
+        async function chamarProximo() {
+            const sala = document.getElementById('cfg-sala').value.trim();
+            const medico = document.getElementById('cfg-medico').value.trim();
+
+            if (!sala || !medico) {
+                alert('Informe a Sala e o Médico.');
+                return;
+            }
+
+            const res = await fetch('/api/fila/chamar-proximo/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify({ sala, medico })
+            });
+
+            if (res.ok) {
+                carregarFilas();
+            } else {
+                const data = await res.json();
+                alert(data.detail || 'Não foi possível chamar o próximo.');
+            }
+        }
+
+        // Modal para chamada específica
+        function abrirModalChamar(id, nome) {
+            document.getElementById('modal-paciente-id').value = id;
+            document.getElementById('modal-paciente-nome').innerText = nome;
+            document.getElementById('modal-sala').value = document.getElementById('cfg-sala').value;
+            document.getElementById('modal-medico').value = document.getElementById('cfg-medico').value;
+            document.getElementById('modal-chamar').classList.remove('hidden');
+            document.getElementById('modal-chamar').classList.add('flex');
+        }
+
+        function fecharModal() {
+            document.getElementById('modal-chamar').classList.add('hidden');
+            document.getElementById('modal-chamar').classList.remove('flex');
+        }
+
+        async function confirmarChamada() {
+            const id = document.getElementById('modal-paciente-id').value;
+            const sala = document.getElementById('modal-sala').value;
+            const medico = document.getElementById('modal-medico').value;
+
+            const res = await fetch(`/api/fila/${id}/chamar/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify({ sala, medico })
+            });
+
+            if (res.ok) {
+                fecharModal();
+                carregarFilas();
+            } else {
+                alert('Erro ao chamar paciente.');
+            }
+        }
+
+        async function finalizarAtendimento(id) {
+            const res = await fetch(`/api/fila/${id}/finalizar/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                }
+            });
+            if (res.ok) carregarFilas();
+        }
+
+        async function removerPaciente(id) {
+            if (!confirm('Deseja realmente remover este paciente da fila?')) return;
+            const res = await fetch(`/api/fila/${id}/cancelar/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                }
+            });
+            if (res.ok) carregarFilas();
+        }
+
+        // Inicialização e Polling do Admin a cada 3s
+        carregarFilas();
+        setInterval(carregarFilas, 3000);
+    </script>
+</body>
+</html>
